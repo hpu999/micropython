@@ -55,7 +55,7 @@ typedef enum {
 typedef struct _dma_descr_t {
     #if defined(MCU_SERIES_F4) || defined(MCU_SERIES_F7)
     DMA_Stream_TypeDef *instance;
-    #elif defined(MCU_SERIES_L4)
+    #elif defined(MCU_SERIES_F1) || defined(MCU_SERIES_L4)
     DMA_Channel_TypeDef *instance;
     #else
     #error "Unsupported Processor"
@@ -308,6 +308,51 @@ static const uint8_t dma_irqn[NSTREAM] = {
     DMA2_Channel7_IRQn,
 };
 
+#elif defined(MCU_SERIES_F1)
+
+#define NCONTROLLERS            (1)
+#define NSTREAMS_PER_CONTROLLER (7)
+#define NSTREAM                 (NCONTROLLERS * NSTREAMS_PER_CONTROLLER)
+
+#define DMA_SUB_INSTANCE_AS_UINT8(dma_request) (dma_request)
+
+#define DMA1_ENABLE_MASK (0x007f) // Bits in dma_enable_mask corresponfing to DMA1
+#define DMA2_ENABLE_MASK (0x3f80) // Bits in dma_enable_mask corresponding to DMA2
+
+// These descriptors are ordered by DMAx_Channel number, and within a channel by request
+// number. The duplicate streams are ok as long as they aren't used at the same time.
+
+// DMA1 streams
+//const dma_descr_t dma_ADC_1_RX = { DMA1_Channel1, DMA_REQUEST_0, DMA_PERIPH_TO_MEMORY, dma_id_0,   NULL }; // unused
+//const dma_descr_t dma_ADC_2_RX = { DMA1_Channel2, DMA_REQUEST_0, DMA_PERIPH_TO_MEMORY, dma_id_1,   NULL }; // unused
+const dma_descr_t dma_SPI_1_RX = { DMA1_Channel2, 1, DMA_PERIPH_TO_MEMORY, dma_id_1,   &dma_init_struct_spi_i2c };
+const dma_descr_t dma_I2C_3_TX = { DMA1_Channel2, 3, DMA_MEMORY_TO_PERIPH, dma_id_1,   &dma_init_struct_spi_i2c };
+//const dma_descr_t dma_ADC_3_RX = { DMA1_Channel3, DMA_REQUEST_0, DMA_PERIPH_TO_MEMORY, dma_id_2,   NULL }; // unused
+const dma_descr_t dma_SPI_1_TX = { DMA1_Channel3, 1, DMA_MEMORY_TO_PERIPH, dma_id_2,   &dma_init_struct_spi_i2c };
+const dma_descr_t dma_I2C_3_RX = { DMA1_Channel3, 3, DMA_PERIPH_TO_MEMORY, dma_id_2,   &dma_init_struct_spi_i2c };
+#if MICROPY_HW_ENABLE_DAC
+const dma_descr_t dma_DAC_1_TX = { DMA1_Channel3, 6, DMA_MEMORY_TO_PERIPH, dma_id_2,   &dma_init_struct_dac };
+#endif
+const dma_descr_t dma_SPI_2_RX = { DMA1_Channel4, 1, DMA_PERIPH_TO_MEMORY, dma_id_3,   &dma_init_struct_spi_i2c };
+const dma_descr_t dma_I2C_2_TX = { DMA1_Channel4, 6, DMA_MEMORY_TO_PERIPH, dma_id_3,   &dma_init_struct_spi_i2c };
+#if MICROPY_HW_ENABLE_DAC
+const dma_descr_t dma_DAC_2_TX = { DMA1_Channel4, 5, DMA_MEMORY_TO_PERIPH, dma_id_3,   &dma_init_struct_dac };
+#endif
+const dma_descr_t dma_SPI_2_TX = { DMA1_Channel5, 1, DMA_MEMORY_TO_PERIPH, dma_id_4,   &dma_init_struct_spi_i2c };
+const dma_descr_t dma_I2C_2_RX = { DMA1_Channel5, 3, DMA_PERIPH_TO_MEMORY, dma_id_4,   &dma_init_struct_spi_i2c };
+const dma_descr_t dma_I2C_1_TX = { DMA1_Channel6, 3, DMA_MEMORY_TO_PERIPH, dma_id_5,   &dma_init_struct_spi_i2c };
+const dma_descr_t dma_I2C_1_RX = { DMA1_Channel7, 3, DMA_PERIPH_TO_MEMORY, dma_id_6,   &dma_init_struct_spi_i2c };
+
+static const uint8_t dma_irqn[NSTREAM] = {
+    DMA1_Channel1_IRQn,
+    DMA1_Channel2_IRQn,
+    DMA1_Channel3_IRQn,
+    DMA1_Channel4_IRQn,
+    DMA1_Channel5_IRQn,
+    DMA1_Channel6_IRQn,
+    DMA1_Channel7_IRQn,
+};
+
 #endif
 
 static DMA_HandleTypeDef *dma_handle[NSTREAM] = {NULL};
@@ -317,8 +362,15 @@ volatile dma_idle_count_t dma_idle;
 
 #define DMA_INVALID_CHANNEL 0xff    // Value stored in dma_last_channel which means invalid
 
+#if defined(MCU_SERIES_F1)
+#define DMA1_IS_CLK_ENABLED()   ((RCC->AHBENR & RCC_AHBENR_DMA1EN) != 0)
+#define DMA2_IS_CLK_ENABLED()   (0)
+#define __HAL_RCC_DMA2_CLK_ENABLE() 
+#define __HAL_RCC_DMA2_CLK_DISABLE()     
+#else
 #define DMA1_IS_CLK_ENABLED()   ((RCC->AHB1ENR & RCC_AHB1ENR_DMA1EN) != 0)
 #define DMA2_IS_CLK_ENABLED()   ((RCC->AHB1ENR & RCC_AHB1ENR_DMA2EN) != 0)
+#endif
 
 #if defined(MCU_SERIES_F4) || defined(MCU_SERIES_F7)
 
@@ -411,7 +463,7 @@ void dma_init_handle(DMA_HandleTypeDef *dma, const dma_descr_t *dma_descr, void 
     dma->Init.Direction = dma_descr->transfer_direction;
     #if defined(MCU_SERIES_L4)
     dma->Init.Request = dma_descr->sub_instance;
-    #else
+    #elif !defined(MCU_SERIES_F1)
     dma->Init.Channel = dma_descr->sub_instance;
     #endif
     // half of __HAL_LINKDMA(data, xxx, *dma)
