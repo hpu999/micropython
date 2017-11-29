@@ -16,6 +16,10 @@
 #define MP_HAL_UNIQUE_ID_ADDRESS (0x1fff7590)
 #define MP_HAL_CLEANINVALIDATE_DCACHE(addr, size)
 #define MP_HAL_CLEAN_DCACHE(addr, size)
+#elif defined(MCU_SERIES_F1)
+#define MP_HAL_UNIQUE_ID_ADDRESS (0x1ffff7e8)
+#define MP_HAL_CLEANINVALIDATE_DCACHE(addr, size)
+#define MP_HAL_CLEAN_DCACHE(addr, size)
 #else
 #error mphalport.h: Unrecognized MCU_SERIES
 #endif
