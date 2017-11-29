@@ -213,6 +213,7 @@ SRC_C = \
 	pin_named_pins.c \
 	bufhelper.c \
 	dma.c \
+	i2c.c \
 	can.c \
 	wdt.c \
 	gccollect.c \
