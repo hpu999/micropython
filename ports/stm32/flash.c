@@ -34,7 +34,13 @@ typedef struct {
     uint32_t sector_count;
 } flash_layout_t;
 
-#if defined(MCU_SERIES_F4)
+#if defined(MCU_SERIES_F1)
+
+static const flash_layout_t flash_layout[] = {
+    { 0x08000000, 0x00400, 128 },
+};
+
+#elif defined(MCU_SERIES_F4)
 
 static const flash_layout_t flash_layout[] = {
     { 0x08000000, 0x04000, 4 },
