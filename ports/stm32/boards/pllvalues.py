@@ -134,14 +134,13 @@ def main():
         sys.exit(1)
 
     if argv[0].startswith("file:"):
-        # extract HSE_VALUE from header file
+        import re
+       # extract HSE_VALUE from header file
         with open(argv[0][5:]) as f:
             for line in f:
-                line = line.strip()
-                if line.startswith("#define") and line.find("HSE_VALUE") != -1:
-                    idx_start = line.find("((uint32_t)") + 11
-                    idx_end = line.find(")", idx_start)
-                    hse = int(line[idx_start:idx_end]) // 1000000
+                m = re.match(r"^\s+#define\s+HSE_VALUE\s+(?:\(\(uint32_t\))?(\d+)U?\)?.*", line)
+                if m:
+                    hse = int(m.group(1)) // 1000000
                     break
             else:
                 raise ValueError("%s does not contain a definition of HSE_VALUE" % argv[0])
