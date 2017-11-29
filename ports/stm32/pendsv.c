@@ -39,8 +39,10 @@
 void *pendsv_object;
 
 void pendsv_init(void) {
+#if !defined(MCU_SERIES_F1)
     // set PendSV interrupt at lowest priority
     HAL_NVIC_SetPriority(PendSV_IRQn, IRQ_PRI_PENDSV, IRQ_SUBPRI_PENDSV);
+#endif
 }
 
 // Call this function to raise a pending exception during an interrupt.

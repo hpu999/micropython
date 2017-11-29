@@ -107,13 +107,16 @@ void __fatal_error(const char *msg);
   * @{
   */
 
-#if defined(MCU_SERIES_F4) || defined(MCU_SERIES_F7)
+#if defined(MCU_SERIES_F1) || defined(MCU_SERIES_F4) || defined(MCU_SERIES_F7)
 
 #define CONFIG_RCC_CR_1ST (RCC_CR_HSION)
 #define CONFIG_RCC_CR_2ND (RCC_CR_HSEON || RCC_CR_CSSON || RCC_CR_PLLON)
 #define CONFIG_RCC_PLLCFGR (0x24003010)
 
-#if defined(MCU_SERIES_F4)
+#if defined(MCU_SERIES_F1)
+const uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
+const uint8_t APBPrescTable[8] = {0, 0, 0, 0, 1, 2, 3, 4};
+#elif defined(MCU_SERIES_F4)
 const uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
 const uint8_t APBPrescTable[8] = {0, 0, 0, 0, 1, 2, 3, 4};
 #elif defined(MCU_SERIES_F7)
@@ -213,9 +216,10 @@ void SystemInit(void)
   /* Reset HSEON, CSSON and PLLON bits */
   RCC->CR &= ~ CONFIG_RCC_CR_2ND;
 
+#if !defined(STM32F103xB)
   /* Reset PLLCFGR register */
   RCC->PLLCFGR = CONFIG_RCC_PLLCFGR;
-
+#endif
   /* Reset HSEBYP bit */
   RCC->CR &= (uint32_t)0xFFFBFFFF;
 
@@ -397,10 +401,13 @@ void SystemClock_Config(void)
     RCC_ClkInitStruct.APB1CLKDivider = b1; //RCC_HCLK_DIV4;
     RCC_ClkInitStruct.APB2CLKDivider = b2; //RCC_HCLK_DIV2;
 #else // defined(MICROPY_HW_CLK_LAST_FREQ) && MICROPY_HW_CLK_LAST_FREQ
+
+#if !defined(MCU_SERIES_F1)
     RCC_OscInitStruct.PLL.PLLM = MICROPY_HW_CLK_PLLM;
     RCC_OscInitStruct.PLL.PLLN = MICROPY_HW_CLK_PLLN;
     RCC_OscInitStruct.PLL.PLLP = MICROPY_HW_CLK_PLLP;
     RCC_OscInitStruct.PLL.PLLQ = MICROPY_HW_CLK_PLLQ;
+#endif
     #if defined(MCU_SERIES_L4)
     RCC_OscInitStruct.PLL.PLLR = MICROPY_HW_CLK_PLLR;
     #endif

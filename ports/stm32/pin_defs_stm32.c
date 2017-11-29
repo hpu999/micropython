@@ -6,6 +6,7 @@
 // GPIO_MODE_AF_PP, GPIO_MODE_AF_OD, or GPIO_MODE_ANALOG.
 
 uint32_t pin_get_mode(const pin_obj_t *pin) {
+#if !defined(MCU_SERIES_F1)
     GPIO_TypeDef *gpio = pin->gpio;
     uint32_t mode = (gpio->MODER >> (pin->pin * 2)) & 3;
     if (mode != GPIO_MODE_ANALOG) {
@@ -14,18 +15,29 @@ uint32_t pin_get_mode(const pin_obj_t *pin) {
         }
     }
     return mode;
+#else
+    return GPIO_MODE_OUTPUT_PP;
+#endif
 }
 
 // Returns the pin pullup/pulldown. The value returned by this macro should
 // be one of GPIO_NOPULL, GPIO_PULLUP, or GPIO_PULLDOWN.
 
 uint32_t pin_get_pull(const pin_obj_t *pin) {
+#if !defined(MCU_SERIES_F1)
     return (pin->gpio->PUPDR >> (pin->pin * 2)) & 3;
+#else
+    return GPIO_NOPULL;
+#endif
 }
 
 // Returns the af (alternate function) index currently set for a pin.
 
 uint32_t pin_get_af(const pin_obj_t *pin) {
+#if !defined(MCU_SERIES_F1)
     return (pin->gpio->AFR[pin->pin >> 3] >> ((pin->pin & 7) * 4)) & 0xf;
+#else
+    return 0;
+#endif
 }
 

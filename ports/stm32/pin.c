@@ -359,10 +359,11 @@ STATIC mp_obj_t pin_obj_init_helper(const pin_obj_t *self, size_t n_args, const 
     if (af == -1) {
         af = args[2].u_int;
     }
+#if !defined(MCU_SERIES_F1)
     if ((mode == GPIO_MODE_AF_PP || mode == GPIO_MODE_AF_OD) && !IS_GPIO_AF(af)) {
         nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "invalid pin af: %d", af));
     }
-
+#endif
     // enable the peripheral clock for the port of this pin
     mp_hal_gpio_clock_enable(self->gpio);
 
@@ -376,8 +377,10 @@ STATIC mp_obj_t pin_obj_init_helper(const pin_obj_t *self, size_t n_args, const 
     GPIO_InitStructure.Pin = self->pin_mask;
     GPIO_InitStructure.Mode = mode;
     GPIO_InitStructure.Pull = pull;
+#if !defined(MCU_SERIES_F1)
     GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
     GPIO_InitStructure.Alternate = af;
+#endif
     HAL_GPIO_Init(self->gpio, &GPIO_InitStructure);
 
     return mp_const_none;

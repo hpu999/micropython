@@ -386,8 +386,10 @@ STATIC void OTG_CMD_WKUP_Handler(PCD_HandleTypeDef *pcd_handle) {
     while (__HAL_RCC_GET_SYSCLK_SOURCE() != RCC_CFGR_SWS_PLL)
     {}
 
+#if !defined(MCU_SERIES_F1)
     /* ungate PHY clock */
      __HAL_PCD_UNGATE_PHYCLOCK(pcd_handle);
+#endif
   }
 
 }
@@ -404,8 +406,10 @@ void OTG_FS_WKUP_IRQHandler(void) {
 
   OTG_CMD_WKUP_Handler(&pcd_fs_handle);
 
+#if !defined(MCU_SERIES_F1)
   /* Clear EXTI pending Bit*/
   __HAL_USB_FS_EXTI_CLEAR_FLAG();
+#endif
 
     IRQ_EXIT(OTG_FS_WKUP_IRQn);
 }
@@ -545,7 +549,9 @@ void TAMP_STAMP_IRQHandler(void) {
 
 void RTC_WKUP_IRQHandler(void) {
     IRQ_ENTER(RTC_WKUP_IRQn);
+#if !defined(MCU_SERIES_F1)
     RTC->ISR &= ~(1 << 10); // clear wakeup interrupt flag
+#endif
     Handle_EXTI_Irq(EXTI_RTC_WAKEUP); // clear EXTI flag and execute optional callback
     IRQ_EXIT(RTC_WKUP_IRQn);
 }
