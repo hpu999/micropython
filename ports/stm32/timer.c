@@ -165,6 +165,7 @@ void timer_deinit(void) {
 // TIM5 is set-up for the servo controller
 // This function inits but does not start the timer
 void timer_tim5_init(void) {
+#if defined(TIM5)
     // TIM5 clock enable
     __TIM5_CLK_ENABLE();
 
@@ -180,6 +181,7 @@ void timer_tim5_init(void) {
     TIM5_Handle.Init.CounterMode = TIM_COUNTERMODE_UP;
 
     HAL_TIM_PWM_Init(&TIM5_Handle);
+#endif
 }
 
 #if defined(TIM6)
@@ -302,7 +304,11 @@ STATIC uint32_t compute_prescaler_period_from_freq(pyb_timer_obj_t *self, mp_obj
 STATIC uint32_t compute_period(pyb_timer_obj_t *self) {
     // In center mode,  compare == period corresponds to 100%
     // In edge mode, compare == (period + 1) corresponds to 100%
+#if !defined(MCU_SERIES_F1)
     uint32_t period = (__HAL_TIM_GetAutoreload(&self->tim) & TIMER_CNT_MASK(self));
+#else
+    uint32_t period = 0xffffffff;
+#endif
     if (period != 0xffffffff) {
         if (self->tim.Init.CounterMode == TIM_COUNTERMODE_UP ||
             self->tim.Init.CounterMode == TIM_COUNTERMODE_DOWN) {
@@ -439,8 +445,12 @@ STATIC void pyb_timer_print(const mp_print_t *print, mp_obj_t self_in, mp_print_
         mp_printf(print, "Timer(%u)", self->tim_id);
     } else {
         uint32_t prescaler = self->tim.Instance->PSC & 0xffff;
+#if !defined(MCU_SERIES_F1)
         uint32_t period = __HAL_TIM_GetAutoreload(&self->tim) & TIMER_CNT_MASK(self);
-        // for efficiency, we compute and print freq as an int (not a float)
+#else
+        uint32_t period = 1;
+#endif
+       // for efficiency, we compute and print freq as an int (not a float)
         uint32_t freq = timer_get_source_freq(self->tim_id) / ((prescaler + 1) * (period + 1));
         mp_printf(print, "Timer(%u, freq=%u, prescaler=%u, period=%u, mode=%s, div=%u",
             self->tim_id,
@@ -558,7 +568,9 @@ STATIC mp_obj_t pyb_timer_init_helper(pyb_timer_obj_t *self, size_t n_args, cons
         case 2: __TIM2_CLK_ENABLE(); break;
         case 3: __TIM3_CLK_ENABLE(); break;
         case 4: __TIM4_CLK_ENABLE(); break;
+        #if defined(TIM5)
         case 5: __TIM5_CLK_ENABLE(); break;
+        #endif
         #if defined(TIM6)
         case 6: __TIM6_CLK_ENABLE(); break;
         #endif
@@ -647,7 +659,9 @@ STATIC const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     TIM_ENTRY(2, TIM2_IRQn),
     TIM_ENTRY(3, TIM3_IRQn),
     TIM_ENTRY(4, TIM4_IRQn),
+    #if defined(TIM5)
     TIM_ENTRY(5, TIM5_IRQn),
+    #endif
     #if defined(TIM6)
     TIM_ENTRY(6, TIM6_DAC_IRQn),
     #endif
@@ -1050,7 +1064,9 @@ STATIC mp_obj_t pyb_timer_channel(size_t n_args, const mp_obj_t *pos_args, mp_ma
             &&  self->tim.Instance != TIM2
             &&  self->tim.Instance != TIM3
             &&  self->tim.Instance != TIM4
+            #if defined(TIM5)
             &&  self->tim.Instance != TIM5
+            #endif
             #if defined(TIM8)
             &&  self->tim.Instance != TIM8
             #endif
@@ -1217,7 +1233,9 @@ STATIC const mp_rom_map_elem_t pyb_timer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_LOW), MP_ROM_INT(TIM_OCPOLARITY_LOW) },
     { MP_ROM_QSTR(MP_QSTR_RISING), MP_ROM_INT(TIM_ICPOLARITY_RISING) },
     { MP_ROM_QSTR(MP_QSTR_FALLING), MP_ROM_INT(TIM_ICPOLARITY_FALLING) },
+#if !defined(MCU_SERIES_F1)
     { MP_ROM_QSTR(MP_QSTR_BOTH), MP_ROM_INT(TIM_ICPOLARITY_BOTHEDGE) },
+#endif
 };
 STATIC MP_DEFINE_CONST_DICT(pyb_timer_locals_dict, pyb_timer_locals_dict_table);
 
