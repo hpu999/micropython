@@ -55,11 +55,13 @@ CFLAGS_CORTEX_M = -mthumb
 # Select hardware floating-point support
 ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),STM32F767xx STM32F769xx))
 CFLAGS_CORTEX_M += -mfpu=fpv5-d16 -mfloat-abi=hard
+else ifeq ($(CMSIS_MCU), STM32F103xB)
+CFLAGS_CORTEX_M += -mfloat-abi=soft
 else
 CFLAGS_CORTEX_M += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 endif
-
 # Options for particular MCU series
+CFLAGS_MCU_f1 = $(CFLAGS_CORTEX_M) -mtune=cortex-m3 -mcpu=cortex-m3 -DMCU_SERIES_F1
 CFLAGS_MCU_f4 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4 -DMCU_SERIES_F4
 CFLAGS_MCU_f7 = $(CFLAGS_CORTEX_M) -mtune=cortex-m7 -mcpu=cortex-m7 -DMCU_SERIES_F7
 CFLAGS_MCU_l4 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4 -DMCU_SERIES_L4
@@ -70,6 +72,10 @@ CFLAGS += $(CFLAGS_MCU_$(MCU_SERIES))
 CFLAGS += $(COPT)
 CFLAGS += -Iboards/$(BOARD)
 CFLAGS += -DSTM32_HAL_H='<stm32$(MCU_SERIES)xx_hal.h>'
+
+ifeq ($(CMSIS_MCU), STM32F103xB)
+CFLAGS += -DUSE_HAL_LEGACY=1
+endif
 
 ifeq ($(MICROPY_FLOAT_IMPL),double)
 CFLAGS += -DMICROPY_FLOAT_IMPL=MICROPY_FLOAT_IMPL_DOUBLE
@@ -152,7 +158,6 @@ SRC_LIBM = $(addprefix lib/libm_dbl/,\
 else
 SRC_LIBM = $(addprefix lib/libm/,\
 	math.c \
-	thumb_vfp_sqrtf.c \
 	acoshf.c \
 	asinfacosf.c \
 	asinhf.c \
@@ -192,9 +197,7 @@ SRC_C = \
 	main.c \
 	system_stm32.c \
 	stm32_it.c \
-	usbd_conf.c \
 	usbd_desc.c \
-	usbd_cdc_interface.c \
 	usbd_hid_interface.c \
 	usbd_msc_storage.c \
 	mphalport.c \
@@ -209,28 +212,18 @@ SRC_C = \
 	pin_defs_stm32.c \
 	pin_named_pins.c \
 	bufhelper.c \
-	dma.c \
-	i2c.c \
-	spi.c \
-	uart.c \
 	can.c \
-	usb.c \
 	wdt.c \
 	gccollect.c \
 	help.c \
-	machine_i2c.c \
-	modmachine.c \
 	modpyb.c \
 	modstm.c \
 	moduos.c \
 	modutime.c \
 	modusocket.c \
 	modnetwork.c \
-	extint.c \
 	usrsw.c \
 	rng.c \
-	rtc.c \
-	flash.c \
 	storage.c \
 	sdcard.c \
 	fatfs_port.c \
@@ -238,12 +231,16 @@ SRC_C = \
 	accel.c \
 	servo.c \
 	dac.c \
-	adc.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
+ifeq ($(CMSIS_MCU), STM32F103xB)
+SRC_O = \
+	gchelper.o
+else
 SRC_O = \
 	startup_stm32.o \
-	gchelper.o \
+	gchelper.o
+endif
 
 SRC_HAL = $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES)xx_,\
 	hal.c \
@@ -261,10 +258,8 @@ SRC_HAL = $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES)xx_,\
 	hal_pcd.c \
 	hal_pcd_ex.c \
 	hal_pwr.c \
-	hal_pwr_ex.c \
 	hal_rcc.c \
 	hal_rcc_ex.c \
-	hal_rng.c \
 	hal_rtc.c \
 	hal_rtc_ex.c \
 	hal_sd.c \
@@ -331,7 +326,9 @@ OBJ += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_O))
 OBJ += $(addprefix $(BUILD)/, $(SRC_HAL:.c=.o))
+ifneq ($(CMSIS_MCU), STM32F103xB)
 OBJ += $(addprefix $(BUILD)/, $(SRC_USBDEV:.c=.o))
+endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 OBJ += $(BUILD)/pins_$(BOARD).o
 
