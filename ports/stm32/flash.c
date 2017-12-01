@@ -78,6 +78,12 @@ static const flash_layout_t flash_layout[] = {
 #error Unsupported processor
 #endif
 
+#if defined(MCU_SERIES_F1)
+static uint32_t get_bank(uint32_t addr) {
+    return 0;
+}
+#endif
+
 #if defined(MCU_SERIES_L4)
 
 // get the bank of a given flash address
@@ -147,19 +153,24 @@ void flash_erase(uint32_t flash_dest, const uint32_t *src, uint32_t num_word32) 
 
     FLASH_EraseInitTypeDef EraseInitStruct;
 
-    #if defined(MCU_SERIES_L4)
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
-
+    #if defined(MCU_SERIES_F1) || defined(MCU_SERIES_L4)
+    #if defined(MCU_SERIES_F1)
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_WRPERR | FLASH_FLAG_PGERR | FLASH_FLAG_BSY);
+    #else
+     __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+    #endif
     // erase the sector(s)
     // The sector returned by flash_get_sector_info can not be used
     // as the flash has on each bank 0/1 pages 0..255
     EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
     EraseInitStruct.Banks       = get_bank(flash_dest);
+    #if defined(MCU_SERIES_L4)
     EraseInitStruct.Page        = get_page(flash_dest);
     EraseInitStruct.NbPages     = get_page(flash_dest + 4 * num_word32 - 1) - EraseInitStruct.Page + 1;;
+    #endif
     #else
     // Clear pending flags (if any)
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
+   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
                            FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
 
     // erase the sector(s)

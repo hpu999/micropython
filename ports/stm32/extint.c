@@ -141,8 +141,13 @@ STATIC const uint8_t nvic_irq_channel[EXTI_NUM_VECTORS] = {
     OTG_FS_WKUP_IRQn,
     ETH_WKUP_IRQn,
     OTG_HS_WKUP_IRQn,
+    #if defined(MCU_SERIES_F1)
+    0,
+    0,
+    #else
     TAMP_STAMP_IRQn,
     RTC_WKUP_IRQn,
+    #endif
 };
 
 // Set override_callback_obj to true if you want to unconditionally set the
@@ -203,7 +208,11 @@ uint extint_register(mp_obj_t pin_obj, uint32_t mode, uint32_t pull, mp_obj_t ca
         exti.Pin = pin->pin_mask;
         exti.Mode = mode;
         exti.Pull = pull;
+        #if defined(MCU_SERIES_F1)
+        exti.Speed = 3;
+        #else
         exti.Speed = GPIO_SPEED_FAST;
+        #endif
         HAL_GPIO_Init(pin->gpio, &exti);
 
         // Calling HAL_GPIO_Init does an implicit extint_enable
@@ -246,10 +255,11 @@ void extint_register_pin(const pin_obj_t *pin, uint32_t mode, bool hard_irq, mp_
 
         // Route the GPIO to EXTI
         __HAL_RCC_SYSCFG_CLK_ENABLE();
+        #if !defined(MCU_SERIES_F1)
         SYSCFG->EXTICR[line >> 2] =
             (SYSCFG->EXTICR[line >> 2] & ~(0x0f << (4 * (line & 0x03))))
             | ((uint32_t)(GPIO_GET_INDEX(pin->gpio)) << (4 * (line & 0x03)));
-
+        #endif
         // Enable or disable the rising detector
         if ((mode & GPIO_MODE_IT_RISING) == GPIO_MODE_IT_RISING) {
             EXTI_RTSR |= 1 << line;

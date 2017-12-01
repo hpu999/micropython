@@ -204,7 +204,11 @@ STATIC void spi_set_params(SPI_HandleTypeDef *spi, uint32_t prescale, int32_t ba
         if (prescale == 0xffffffff) {
             // prescaler not given, so select one that yields at most the requested baudrate
             mp_uint_t spi_clock;
+            #if defined(SPI3)
             if (spi->Instance == SPI2 || spi->Instance == SPI3) {
+            #else
+            if (spi->Instance == SPI2) {
+            #endif
                 // SPI2 and SPI3 are on APB1
                 spi_clock = HAL_RCC_GetPCLK1Freq();
             } else {
@@ -484,7 +488,9 @@ STATIC void spi_transfer(const pyb_spi_obj_t *self, size_t len, const uint8_t *s
 STATIC void spi_print(const mp_print_t *print, SPI_HandleTypeDef *spi, bool legacy) {
     uint spi_num = 1; // default to SPI1
     if (spi->Instance == SPI2) { spi_num = 2; }
+    #if defined(SPI3)
     else if (spi->Instance == SPI3) { spi_num = 3; }
+    #endif
     #if defined(SPI4)
     else if (spi->Instance == SPI4) { spi_num = 4; }
     #endif
@@ -500,7 +506,11 @@ STATIC void spi_print(const mp_print_t *print, SPI_HandleTypeDef *spi, bool lega
         if (spi->Init.Mode == SPI_MODE_MASTER) {
             // compute baudrate
             uint spi_clock;
+            #if defined(SPI3)
             if (spi->Instance == SPI2 || spi->Instance == SPI3) {
+            #else
+            if (spi->Instance == SPI2) {
+            #endif
                 // SPI2 and SPI3 are on APB1
                 spi_clock = HAL_RCC_GetPCLK1Freq();
             } else {
@@ -577,7 +587,11 @@ STATIC mp_obj_t pyb_spi_init_helper(const pyb_spi_obj_t *self, size_t n_args, co
 
     init->Direction = args[5].u_int;
     init->NSS = args[7].u_int;
+    #if defined(MCU_SERIES_F1)
+    init->TIMode = 0;
+    #else
     init->TIMode = args[9].u_bool ? SPI_TIMODE_ENABLED : SPI_TIMODE_DISABLED;
+    #endif
     if (args[10].u_obj == mp_const_none) {
         init->CRCCalculation = SPI_CRCCALCULATION_DISABLED;
         init->CRCPolynomial = 0;

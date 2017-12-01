@@ -158,6 +158,7 @@ SRC_LIBM = $(addprefix lib/libm_dbl/,\
 else
 SRC_LIBM = $(addprefix lib/libm/,\
 	math.c \
+	thumb_vfp_sqrtf.c \
 	acoshf.c \
 	asinfacosf.c \
 	asinhf.c \
@@ -214,18 +215,25 @@ SRC_C = \
 	bufhelper.c \
 	dma.c \
 	i2c.c \
+	spi.c \
+	uart.c \
 	can.c \
 	wdt.c \
 	gccollect.c \
 	help.c \
+	machine_i2c.c \
+	modmachine.c \
 	modpyb.c \
 	modstm.c \
 	moduos.c \
 	modutime.c \
 	modusocket.c \
 	modnetwork.c \
+	extint.c \
 	usrsw.c \
 	rng.c \
+	rtc.c \
+	flash.c \
 	storage.c \
 	sdcard.c \
 	fatfs_port.c \
@@ -237,6 +245,7 @@ SRC_C = \
 
 ifeq ($(CMSIS_MCU), STM32F103xB)
 SRC_O = \
+	startup_stm32f103xb.o \
 	gchelper.o
 else
 SRC_O = \
